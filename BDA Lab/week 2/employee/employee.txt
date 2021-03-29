@@ -1,0 +1,63 @@
+Your Interactive Bash Terminal.
+$ cqlsh
+Connected to Test Cluster at 127.0.0.1:9042.
+[cqlsh 5.0.1 | Cassandra 4.0-beta2 | CQL spec 3.4.5 | Native protocol v4]
+Use HELP for help.
+cqlsh> 
+cqlsh> 
+cqlsh> create keyspace employee with replication = {'class': 'SimpleStrategy', 'replication_factor': 1};
+cqlsh> use employee;
+cqlsh:employee> create table employeeinfo(emp_id int primary key, emp_name text, designation text, doj timestamp, salary double, dept_name text);
+cqlsh:employee> begin batch
+            ... insert into employeeinfo(emp_id, emp_name, designation, doj, salary, dept_name) values (1, 'Ajay', 'Data analyst', '2018-04-16', 20000, 'Corporate');
+            ... insert into employeeinfo(emp_id, emp_name, designation, doj, salary, dept_name) values (121, 'Chaitra', 'web design', '2019-08-06', 15000, 'web_designer');
+            ... apply batch;
+cqlsh:employee> select * from employeeinfo;
+
+ emp_id | dept_name    | designation  | doj                             | emp_name | salary
+--------+--------------+--------------+---------------------------------+----------+--------
+      1 |    Corporate | Data analyst | 2018-04-16 00:00:00.000000+0000 |     Ajay |  20000
+    121 | web_designer |   web design | 2019-08-06 00:00:00.000000+0000 |  Chaitra |  15000
+
+(2 rows)
+cqlsh:employee> update employeeinfo set emp_name = 'Joy', dept_name = 'Management' where emp_id = 121;
+cqlsh:employee> select * from employeeinfo;
+
+ emp_id | dept_name  | designation  | doj                             | emp_name | salary
+--------+------------+--------------+---------------------------------+----------+--------
+      1 |  Corporate | Data analyst | 2018-04-16 00:00:00.000000+0000 |     Ajay |  20000
+    121 | Management |   web design | 2019-08-06 00:00:00.000000+0000 |      Joy |  15000
+
+(2 rows)
+cqlsh:employee> alter table employeeinfo add projects set<text>;
+cqlsh:employee> update employeeinfo set projects = {'project1', 'project2'} where emp_id in(1,121);
+cqlsh:employee> select * from employeeinfo;
+
+ emp_id | dept_name  | designation  | doj                             | emp_name | projects                 | salary
+--------+------------+--------------+---------------------------------+----------+--------------------------+--------
+      1 |  Corporate | Data analyst | 2018-04-16 00:00:00.000000+0000 |     Ajay | {'project1', 'project2'} |  20000
+    121 | Management |   web design | 2019-08-06 00:00:00.000000+0000 |      Joy | {'project1', 'project2'} |  15000
+
+(2 rows)
+cqlsh:employee> begin batch
+            ... insert into employeeinfo(emp_id, emp_name, designation, doj, salary, dept_name) values (121, 'Boris', 'MTO', '2001-08-05', 12212, 'Corporate') using ttl 15;
+            ... apply batch;
+cqlsh:employee> select ttl(designation) from employeeinfo where emp_id = 121;
+
+ ttl(designation)
+------------------
+             null
+
+(1 rows)
+cqlsh:employee> select * from employeeinfo;
+
+ emp_id | dept_name | designation  | doj                             | emp_name | projects                 | salary
+--------+-----------+--------------+---------------------------------+----------+--------------------------+--------
+      1 | Corporate | Data analyst | 2018-04-16 00:00:00.000000+0000 |     Ajay | {'project1', 'project2'} |  20000
+    121 |      null |         null |                            null |     null | {'project1', 'project2'} |   null
+
+(2 rows)
+cqlsh:employee> begin batch insert into employeeinfo(emp_id, emp_name, designation, doj, salary, dept_name) values (121, 'Boris', 'MTO', '2001-08-05', 12212, 'Corporate') using ttl 120; apply batch;
+cqlsh:employee> select ttl(designation) from employeeinfo where emp_id = 121; ttl(designation)
+------------------
+              109
